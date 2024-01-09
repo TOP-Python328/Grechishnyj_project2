@@ -41,16 +41,17 @@ class Parameter:
             initial: float, 
             min: float, 
             max: float,  
-            origin: 'Creature' = None
+            creature: 'Creature' = None
     ):
         self.__value = initial
-        self.min = min
-        self.max = max
-        self.origin = origin
+        self._min = min
+        self._max = max
+        self.creature = creature
 
     @property
     def value(self) -> float:
         return self.__value
+    
 
     @cached_property
     def range(self) -> tuple[float, float]:
@@ -70,12 +71,20 @@ class Parameter:
         pass
 
 
+
 class Health(Parameter):
     """Здоровье - параметр Tamagotchi."""
     name = 'Health'
 
     def update(self) -> None:
         """Обновление параметра."""
+        satiety = self.creature.parameters[Satiety]
+        critcal = sum(satiety.range) / 4
+        if 0 < satiety.value < critcal:
+            self.value -= 1
+        elif satiety.value == 0:
+            self.value -= 2
+
 
 class Satiety(Parameter):
     """Сытость - параметр Tamagotchi."""
@@ -83,6 +92,7 @@ class Satiety(Parameter):
 
     def update(self) -> None:
         """Обновление параметра."""
+        self.value -= 1
 
 class Fatigue(Parameter):
     """Усталость - параметр Tamagotchi."""
@@ -210,7 +220,7 @@ class Creature:
         for param in params:
             key = Parameters[param.name].value
             cls = Parameters[param.name].value
-            self.parameters[key] = cls(param.value,param.min,param.max,self)
+            self.parameters[key] = cls(param.value, param._min, param._max, self)
             # print(param)
             # print(f'{Parameters[param.name].name = }')
             # print(f'{Parameters[param.name].value = }')
@@ -221,14 +231,23 @@ class Creature:
     def update(self) -> None:
         """Обновление всех параметров Tamagotchi."""
 
+        for parameter in self.parameters.values():
+            parameter.update()
+
+    def __repr__(self):
+        title = f'{self.kind.name} {self.name} {self.age}'
+        params = '\n'.join(f'\t{p.name} {p.value:.2f}' for p in self.parameters.values())
+        return f'{title}\n{params}'
+
+
 
 
 cube = Kind(
     'Кубик', 
     MaturePhase(
         5, 
-        Parameters(Health).value(50, 75, 75),
-        Parameters(Satiety).value(50, 75, 75),
+        Parameters(Health).value(50, 0, 100),
+        Parameters(Satiety).value(50, 0, 100),
         Parameters(Fatigue).value(50, 0, 100),
         Parameters(Hygiene).value(50, 0, 100),
         Parameters(Mood).value(50, 0, 100),

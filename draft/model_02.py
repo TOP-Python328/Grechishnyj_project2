@@ -214,13 +214,12 @@ class Creature:
     ):
         self.kind = kind
         self.name = name
-        self.age: int = 0
+        self.__age: int = 0
         self.parameters: dict[Type, Parameter] = {}
         params = kind[0].parameters
         for param in params:
-            key = Parameters[param.name].value
             cls = Parameters[param.name].value
-            self.parameters[key] = cls(param.value, param._min, param._max, self)
+            self.parameters[cls] = cls(param.value, param._min, param._max, self)
             # print(param)
             # print(f'{Parameters[param.name].name = }')
             # print(f'{Parameters[param.name].value = }')
@@ -230,15 +229,72 @@ class Creature:
     
     def update(self) -> None:
         """Обновление всех параметров Tamagotchi."""
-
         for parameter in self.parameters.values():
             parameter.update()
+
+    @property
+    def age(self) -> int:
+        return self.__age
+    
+    @age.setter
+    def age(self, new_age: int):
+        isgrow = self.kind[self.__age] is not self.kind[new_age]
+        self.__age = new_age
+        if isgrow:
+            self._grow_up()
+            print(self.kind[self.__age])     
+        else:
+            ...
+
+    def _grow_up(self) -> None:
+        """Изменение возрастного периода питомца - взросление."""
+        for param in self.kind[self.age].parameters:
+            cls = Parameters[param.name].value
+            value = param.value or self.parameters[cls].value
+            self.parameters[cls] = cls(value, param._min, param._max, self)
 
     def __repr__(self):
         title = f'{self.kind.name} {self.name} {self.age}'
         params = '\n'.join(f'\t{p.name} {p.value:.2f}' for p in self.parameters.values())
         return f'{title}\n{params}'
 
+# >>> yasha
+# Кубик Yasha 0
+#         Health 50.00
+#         Satiety 50.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>> yasha.parameters[Health].range
+# (0, 50)
+# >>>
+# >>> yasha.age = 6
+# <__main__.MaturePhase object at 0x0000028FF0DD0350>
+# >>> yasha
+# Кубик Yasha 6
+#         Health 50.00
+#         Satiety 50.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>> yasha.parameters[Health].range
+# (0, 75)
+# >>>
+# >>> yasha.age = 55
+# <__main__.MaturePhase object at 0x0000028FF0DD0510>
+# >>> yasha
+# Кубик Yasha 55
+#         Health 50.00
+#         Satiety 50.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>> yasha.parameters[Health].range
+# (0, 100)
+# >>>
 
 
 
@@ -246,30 +302,30 @@ cube = Kind(
     'Кубик', 
     MaturePhase(
         5, 
-        Parameters(Health).value(50, 0, 100),
-        Parameters(Satiety).value(50, 0, 100),
-        Parameters(Fatigue).value(50, 0, 100),
-        Parameters(Hygiene).value(50, 0, 100),
-        Parameters(Mood).value(50, 0, 100),
-        Parameters(Stamina).value(50, 0, 100)
+        Parameters(Health).value(50, 0, 50),
+        Parameters(Satiety).value(50, 0, 50),
+        Parameters(Fatigue).value(50, 0, 50),
+        Parameters(Hygiene).value(50, 0, 50),
+        Parameters(Mood).value(50, 0, 50),
+        Parameters(Stamina).value(50, 0, 50)
     ),
     MaturePhase(
         20,
-        Parameters(Health).value(50, 75, 75),
-        Parameters(Satiety).value(50, 75, 75),
-        Parameters(Fatigue).value(50, 0, 100),
-        Parameters(Hygiene).value(50, 0, 100),
-        Parameters(Mood).value(50, 0, 100),
-        Parameters(Stamina).value(50, 0, 100)
+        Parameters(Health).value(0, 0, 75),
+        Parameters(Satiety).value(0, 0, 75),
+        Parameters(Fatigue).value(0, 0, 75),
+        Parameters(Hygiene).value(0, 0, 75),
+        Parameters(Mood).value(0, 0, 75),
+        Parameters(Stamina).value(0, 0, 75)
     ), 
     MaturePhase(
         50, 
-        Parameters(Health).value(50, 75, 75),
-        Parameters(Satiety).value(50, 75, 75),
-        Parameters(Fatigue).value(50, 0, 100),
-        Parameters(Hygiene).value(50, 0, 100),
-        Parameters(Mood).value(50, 0, 100),
-        Parameters(Stamina).value(50, 0, 100)
+        Parameters(Health).value(0, 0, 100),
+        Parameters(Satiety).value(0, 0, 100),
+        Parameters(Fatigue).value(0, 0, 100),
+        Parameters(Hygiene).value(0, 0, 100),
+        Parameters(Mood).value(0, 0, 100),
+        Parameters(Stamina).value(0, 0, 100)
     )
 )
 

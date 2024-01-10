@@ -209,12 +209,15 @@ class State:
     age: int
     # param1: None
 
+    def __repr__(self):
+        return '/'.join(f'{param}={value}' for param, value in self.__dict__.items())
+
 
 # caretaker -> опекун для State
 class History(list):
     """История состояний питомца."""
 
-    def get_param_history(self, parameter: Type) -> list[float]:
+    def get_param(self, parameter: Type) -> list[float]:
         """История изменений отдельного параметра."""
         return [getattr(state, parameter.__name__) for state in self]
 
@@ -241,6 +244,16 @@ class History(list):
 # >>> yasha.update()
 # >>> yasha.history
 # [State(age=0), State(age=0), State(age=0), State(age=5)]
+# >>>
+# >>> yasha.history[0].__dict__
+# {'age': 5, 'Health': 50, 'Satiety': 49, 'Fatigue': 50, 'Hygiene': 50, 'Mood': 50, 'Stamina': 50}
+# >>> yasha.history[len(yasha.history) - 1].__dict__
+# {'age': 5, 'Health': 50, 'Satiety': 35, 'Fatigue': 50, 'Hygiene': 50, 'Mood': 50, 'Stamina': 50}
+# >>>
+# >>> yasha.history.get_param_history(Health)
+# [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
+# >>> yasha.history.get_param(Satiety)
+# [49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35]
 # >>>
 
 

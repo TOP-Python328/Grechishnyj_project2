@@ -66,7 +66,7 @@ class Parameter:
         else:
             self.__value = new_value
 
-    # @abstractmethod
+    @abstractmethod
     def update(self) -> None:
         pass
 
@@ -201,17 +201,54 @@ class Kind(DictOfRanges):
 #     (110, 184): <__main__.MaturePhase object at 0x000002C810F730D0>
 # }
 
+    
+# memento -> originator(class Creature)
+@dataclass
+class State:
+    """Состояние питомца."""
+    age: int
+    # param1: None
 
 
+# caretaker -> опекун для State
+class History(list):
+    """История состояний питомца."""
 
+    def get_param_history(self, parameter: Type) -> list[float]:
+        """История изменений отдельного параметра."""
+        return [getattr(state, parameter.__name__) for state in self]
+
+# >>> yasha
+# Кубик Yasha 0
+#         Health 50.00
+#         Satiety 50.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>>
+# >>> yasha.history
+# []
+# >>>
+# >>> yasha.update()
+# >>> yasha.update()
+# >>> yasha.update()
+# >>>
+# >>> yasha.history
+# [State(age=0), State(age=0), State(age=0)]
+# >>>
+# >>> yasha.age = 5
+# >>> yasha.update()
+# >>> yasha.history
+# [State(age=0), State(age=0), State(age=0), State(age=5)]
+# >>>
+
+
+# originator
 class Creature:
     """Описывает питомца - игровое существо. Tamagotchi."""
 
-    def __init__(
-            self,
-            kind: Kind,
-            name: str,
-    ):
+    def __init__(self, kind: Kind, name: str,):
         self.kind = kind
         self.name = name
         self.__age: int = 0
@@ -220,17 +257,13 @@ class Creature:
         for param in params:
             cls = Parameters[param.name].value
             self.parameters[cls] = cls(param.value, param._min, param._max, self)
-            # print(param)
-            # print(f'{Parameters[param.name].name = }')
-            # print(f'{Parameters[param.name].value = }')
-            # print(f'{cls = }')
-        # for k, v in self.parameters.items():
-        #     print(f'{k=} {v=} {v.__dict__}')
+        self.history: History = History()
     
     def update(self) -> None:
         """Обновление всех параметров Tamagotchi."""
         for parameter in self.parameters.values():
             parameter.update()
+        self.save()
 
     @property
     def age(self) -> int:
@@ -242,9 +275,9 @@ class Creature:
         self.__age = new_age
         if isgrow:
             self._grow_up()
-            print(self.kind[self.__age])     
-        else:
-            ...
+            # print(self.kind[self.__age])     
+        # else:
+        #     ...
 
     def _grow_up(self) -> None:
         """Изменение возрастного периода питомца - взросление."""
@@ -252,6 +285,14 @@ class Creature:
             cls = Parameters[param.name].value
             value = param.value or self.parameters[cls].value
             self.parameters[cls] = cls(value, param._min, param._max, self)
+
+    def save(self) -> State:
+        """Сохранение состояния питомца."""
+        state = State(self.age)
+        for cls, parameter in self.parameters.items():
+            setattr(state, cls.__name__, parameter.value)
+        self.history.append(state)
+        return state
 
     def __repr__(self):
         title = f'{self.kind.name} {self.name} {self.age}'

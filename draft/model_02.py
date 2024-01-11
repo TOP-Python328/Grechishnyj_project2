@@ -52,7 +52,6 @@ class Parameter:
     def value(self) -> float:
         return self.__value
     
-
     @cached_property
     def range(self) -> tuple[float, float]:
         return (self._min, self._max)
@@ -69,7 +68,6 @@ class Parameter:
     @abstractmethod
     def update(self) -> None:
         pass
-
 
 
 class Health(Parameter):
@@ -148,6 +146,73 @@ Parameters = Enum(
 #  <Parameters.Disease: <class '__main__.Disease'>>, 
 #  <Parameters.Stamina: <class '__main__.Stamina'>>]
 # >>>
+class Action(ABC):
+    """Выполнение действия."""
+    name: str
+
+    def __init__(self, creature: 'Creature' = None):
+        self.creature = creature
+
+    def __hash__(self):
+        return hash(self.name)
+
+    @abstractmethod
+    def do(self) -> None:
+        pass
+
+
+class PlayerAction(Action):
+    """Выполнение действия игроком."""
+    image: Path
+
+
+class Feed(PlayerAction):
+    """Выполнение действия игроком - покормить питомца."""
+    name: str = 'Покормить'
+    image: Path = Path() # 'path/image/feed'
+
+    def __init__(
+            self,
+            amount: float,
+            creature: 'Creature' = None
+    ):
+        self.amount = amount
+        super().__init__(creature)
+
+    def do(self) -> None:
+        """Выполненить действие - покормить."""
+        ...
+
+
+class TeaseHead(PlayerAction):
+    """Выполнение действия игроком - почесать голову питомцу."""
+    name: str = 'Почесать голову'
+    image: Path = Path() # 'path/image/feed'
+
+    def do(self) -> None:
+        """Выполненить действие - почесать голову питомцу."""
+        ...
+
+
+class CreatureAction(Action):
+    """Выполнение действия питомцем."""
+
+    def __init__(
+            self, 
+            rand_coeff: float,
+            creature: 'Creature' = None,
+    ):
+        self.rand_coeff = rand_coeff
+        super().__init__(creature)
+
+
+class ChaseTail(CreatureAction):
+    """Выполнение действия питомцем - погоня за хвостом."""
+    name: str =  'погоня за хвостом'
+
+    def do(self):
+        """Выполненить действие - погоня за хвостом."""
+        ...
 
 
 
@@ -157,13 +222,24 @@ class MaturePhase:
     def __init__(
             self,
             days: int,
-            *parameters: Parameter
+            *parameters: Parameter,
+            player_actions: Iterable[PlayerAction],
+            creature_actions: Iterable[CreatureAction]
             # coeffs: dict = {}
     ):
         self.days = days
-        self.parameters = parameters
+        self.parameters = tuple(parameters)
+        self.player_actions = tuple(player_actions)
+        self.creature_actions = tuple(creature_actions)
         # self.coeffs = coeffs
 
+# >>> mf = MaturePhase(5, None)
+# >>> mf
+# <__main__.MaturePhase object at 0x000001D15E7078D0>
+# >>> MaturePhase.__mro__
+# (<class '__main__.MaturePhase'>, <class 'object'>)
+# >>> mf.__dict__
+# {'days': 5, 'parameters': (None,)}       
 
 # Реализовать хранение информации о виде в файле!!!
 class Kind(DictOfRanges):
@@ -270,6 +346,17 @@ class Creature:
         for param in params:
             cls = Parameters[param.name].value
             self.parameters[cls] = cls(param.value, param._min, param._max, self)
+        self.player_actions: set[PlayerAction] = set()
+        for action in kind[0].player_actions:
+            cls = action.__class__
+            kwargs = action.__dict__ | {'creature': self}
+            self.player_actions.add(cls(**kwargs))
+        self.creature_actions: set[CreatureAction] = set()
+        for action in kind[0].creature_actions:
+            cls = action.__class__
+            kwargs = action.__dict__ | {'creature': self}
+            self.creature_actions.add(cls(**kwargs))
+        
         self.history: History = History()
     
     def update(self) -> None:
@@ -361,7 +448,13 @@ cube = Kind(
         Parameters(Fatigue).value(50, 0, 50),
         Parameters(Hygiene).value(50, 0, 50),
         Parameters(Mood).value(50, 0, 50),
-        Parameters(Stamina).value(50, 0, 50)
+        Parameters(Stamina).value(50, 0, 50),
+        player_actions=[
+            Feed(3)
+        ],
+        creature_actions=[
+            ChaseTail(0.7),
+        ]
     ),
     MaturePhase(
         20,
@@ -370,7 +463,13 @@ cube = Kind(
         Parameters(Fatigue).value(0, 0, 75),
         Parameters(Hygiene).value(0, 0, 75),
         Parameters(Mood).value(0, 0, 75),
-        Parameters(Stamina).value(0, 0, 75)
+        Parameters(Stamina).value(0, 0, 75),
+        player_actions=[
+            Feed(5)
+        ],
+        creature_actions=[
+            ChaseTail(0.1),
+        ]
     ), 
     MaturePhase(
         50, 
@@ -379,9 +478,20 @@ cube = Kind(
         Parameters(Fatigue).value(0, 0, 100),
         Parameters(Hygiene).value(0, 0, 100),
         Parameters(Mood).value(0, 0, 100),
-        Parameters(Stamina).value(0, 0, 100)
+        Parameters(Stamina).value(0, 0, 100),
+        player_actions=[
+            Feed(7)
+        ],
+        creature_actions=[]
     )
 )
+
+# >>> m = Parameters(Mood)
+# >>> m.value
+# <class '__main__.Mood'>
+# >>> m.value()
+# ...
+# TypeError: Parameter.__init__() missing 3 required positional arguments: 'initial', 'min', and 'max'
 
 yasha = Creature( 
     cube,
@@ -405,6 +515,28 @@ yasha = Creature(
     # <class '__main__.Mood'>: <__main__.Mood object at 0x000001D6CE54FB90>, 
     # <class '__main__.Stamina'>: <__main__.Stamina object at 0x000001D6CE54FBD0>
 # }
+
+# >>> yasha.player_actions
+# {<__main__.Feed object at 0x00000189FF926FD0>}
+# >>> yasha.creature_actions
+# {<__main__.ChaseTail object at 0x00000189FF927010>}
+# >>> tuple(yasha.player_actions)[0].creature
+# Кубик Yasha 0
+#         Health 50.00
+#         Satiety 50.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>> tuple(yasha.creature_actions)[0].creature
+# Кубик Yasha 0
+#         Health 50.00
+#         Satiety 50.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>>
 
 
 

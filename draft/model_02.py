@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Type, Iterable
 from functools import cached_property
 from pathlib import Path
+from random import sample, choice
 
 
 # DictOfRanges: dict[tuple[int, int], Any]
@@ -205,6 +206,13 @@ class CreatureAction(Action):
         self.rand_coeff = rand_coeff
         super().__init__(creature)
 
+class NoAction(Action):
+    """Бездействие - заглушка."""
+    name = 'No Action'
+
+    def do(self) -> None:
+        """Бездействует."""
+        print(f'{self.name}')
 
 class ChaseTail(CreatureAction):
     """Выполнение действия питомцем - погоня за хвостом."""
@@ -212,7 +220,7 @@ class ChaseTail(CreatureAction):
 
     def do(self):
         """Выполненить действие - погоня за хвостом."""
-        ...
+        print(f'Event - {self.__doc__}')
 
 
 
@@ -360,7 +368,38 @@ class Creature:
             action.__class__(**{**action.__dict__, 'creature': self})
             for action in self.kind[self.age].creature_actions
         }
-    
+
+    def random_action(self):
+        """Случайное действие питомца."""
+        action = choice(tuple(self.creature_actions))
+        no_action = NoAction()
+        prob = int(action.rand_coeff * 100)
+        choice(sample([action, no_action], counts=[prob, 100-prob], k=100)).do()
+
+# >>> for _ in range(20):
+# ...     yasha.random_action()
+# ...
+# Event - Выполнение действия питомцем - погоня за хвостом.
+# Event - Выполнение действия питомцем - погоня за хвостом.
+# Event - Выполнение действия питомцем - погоня за хвостом.
+# Event - Выполнение действия питомцем - погоня за хвостом.
+# No Action
+# Event - Выполнение действия питомцем - погоня за хвостом.
+# No Action
+# No Action
+# Event - Выполнение действия питомцем - погоня за хвостом.
+# Event - Выполнение действия питомцем - погоня за хвостом.
+# No Action
+# Event - Выполнение действия питомцем - погоня за хвостом.
+# Event - Выполнение действия питомцем - погоня за хвостом.
+# Event - Выполнение действия питомцем - погоня за хвостом.
+# Event - Выполнение действия питомцем - погоня за хвостом.
+# Event - Выполнение действия питомцем - погоня за хвостом.
+# No Action
+# No Action
+# No Action
+# No Action
+
     def update(self) -> None:
         """Обновление всех параметров Tamagotchi."""
         for parameter in self.parameters.values():

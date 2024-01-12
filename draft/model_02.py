@@ -181,7 +181,7 @@ class Feed(PlayerAction):
 
     def do(self) -> None:
         """Выполненить действие - покормить."""
-        ...
+        self.creature.parameters[Satiety].value += self.amount
 
 
 class TeaseHead(PlayerAction):
@@ -346,18 +346,20 @@ class Creature:
         for param in params:
             cls = Parameters[param.name].value
             self.parameters[cls] = cls(param.value, param._min, param._max, self)
-        self.player_actions: set[PlayerAction] = set()
-        for action in kind[0].player_actions:
-            cls = action.__class__
-            kwargs = action.__dict__ | {'creature': self}
-            self.player_actions.add(cls(**kwargs))
-        self.creature_actions: set[CreatureAction] = set()
-        for action in kind[0].creature_actions:
-            cls = action.__class__
-            kwargs = action.__dict__ | {'creature': self}
-            self.creature_actions.add(cls(**kwargs))
-        
+        self.player_actions: set[PlayerAction]
+        self.creature_actions: set[CreatureAction] 
+        self.__set_actions()
         self.history: History = History()
+
+    def __set_actions(self) -> None:
+        self.player_actions = {
+            action.__class__(**{**action.__dict__, 'creature': self})
+            for action in self.kind[self.age].player_actions
+        }
+        self.creature_actions = {
+            action.__class__(**{**action.__dict__, 'creature': self})
+            for action in self.kind[self.age].creature_actions
+        }
     
     def update(self) -> None:
         """Обновление всех параметров Tamagotchi."""
@@ -385,6 +387,7 @@ class Creature:
             cls = Parameters[param.name].value
             value = param.value or self.parameters[cls].value
             self.parameters[cls] = cls(value, param._min, param._max, self)
+        self.__set_actions()
 
     def save(self) -> State:
         """Сохранение состояния питомца."""
@@ -493,10 +496,12 @@ cube = Kind(
 # ...
 # TypeError: Parameter.__init__() missing 3 required positional arguments: 'initial', 'min', and 'max'
 
-yasha = Creature( 
-    cube,
-    'Yasha'
-)
+yasha = Creature(cube,'Yasha')
+
+buttons = [
+    action.do
+    for action in yasha.player_actions
+]
 
 # >>> yasha.kind
 # {
@@ -532,6 +537,114 @@ yasha = Creature(
 # Кубик Yasha 0
 #         Health 50.00
 #         Satiety 50.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>>
+
+
+
+# >>> yasha
+# Кубик Yasha 0
+#         Health 50.00
+#         Satiety 50.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>>
+# >>> for _ in range(20):
+# ...     yasha.update()
+# ...
+# >>> yasha
+# Кубик Yasha 0
+#         Health 50.00
+#         Satiety 30.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>>
+# >>> buttons
+# [<bound method Feed.do of <__main__.Feed object at 0x000001DB7F4CAFD0>>]
+# >>> buttons[0]()
+# >>>
+# >>> yasha
+# Кубик Yasha 0
+#         Health 50.00
+#         Satiety 33.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>>
+# >>> yasha.age = 10
+# >>> yasha
+# Кубик Yasha 10
+#         Health 50.00
+#         Satiety 33.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>>
+# >>> for _ in range(20):
+# ...     yasha.update()
+# ...
+# >>> yasha
+# Кубик Yasha 10
+#         Health 45.00
+#         Satiety 13.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>>
+# >>> buttons[0]()
+# >>>
+# >>> yasha
+# Кубик Yasha 10
+#         Health 45.00
+#         Satiety 16.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>>
+# >>> buttons = [
+# ...     action.do
+# ...     for action in yasha.player_actions
+# ... ]
+# >>>
+# >>> buttons[0]()
+# >>>
+# >>> yasha
+# Кубик Yasha 10
+#         Health 45.00
+#         Satiety 21.00
+#         Fatigue 50.00
+#         Hygiene 50.00
+#         Mood 50.00
+#         Stamina 50.00
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> buttons[0]()
+# >>> yasha
+# Кубик Yasha 10
+#         Health 45.00
+#         Satiety 75.00
 #         Fatigue 50.00
 #         Hygiene 50.00
 #         Mood 50.00

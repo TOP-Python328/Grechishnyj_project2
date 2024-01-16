@@ -1,10 +1,12 @@
-
+__all__ = [
+    'Kind', 'MaturePhase', 'Creature'
+]
 
 from dataclasses import dataclass
 from typing import Type, Iterable
 from random import sample, choice
-from core.actions import PlayerAction, CreatureAction, NoAction
-from core.parameters import *
+from .actions import PlayerAction, CreatureAction, NoAction
+from .parameters import *
 
 
 # DictOfRanges: dict[tuple[int, int], Any]

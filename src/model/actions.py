@@ -7,7 +7,7 @@ __all__ = [
 
 from pathlib import Path
 from abc import ABC, abstractmethod
-from core.parameters import Parameters, Creature
+from .parameters import Parameters, Creature
 
 
 class Action(ABC):

@@ -1,6 +1,11 @@
-from core.kind import Kind, MaturePhase, Creature
-from core.parameters import *
-from core.actions import *  
+Kinds = [
+    'cube',
+]
+
+
+from .parameters import *
+from .actions import *  
+from .kind import *
 
 cube = Kind(
     'Кубик', 
